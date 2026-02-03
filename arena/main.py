@@ -81,7 +81,28 @@ async def root():
 # Health check
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "version": __version__}
+    """Health check endpoint for Railway and monitoring."""
+    from datetime import datetime
+    from sqlalchemy import text
+    from .db import SessionLocal
+    
+    health_status = {
+        "status": "healthy",
+        "version": __version__,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    # Check database connectivity
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        health_status["database"] = "connected"
+    except Exception as e:
+        health_status["status"] = "degraded"
+        health_status["database"] = f"error: {str(e)}"
+    
+    return health_status
 
 
 # Startup event
