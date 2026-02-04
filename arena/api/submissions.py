@@ -2,7 +2,6 @@
 
 import base64
 import uuid
-import asyncio
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -11,7 +10,7 @@ from sqlalchemy import func
 from ..db import get_db, Agent, Challenge, Submission
 from ..challenges import CompressionChallenge
 from ..config import SUBMISSIONS_PER_HOUR
-from .schemas import SubmissionCreate, SubmissionResult, SubmissionStatus, Leaderboard, LeaderboardEntry
+from .schemas import SubmissionCreate, SubmissionResult, Leaderboard, LeaderboardEntry
 from .challenges import CHALLENGES, get_challenge
 
 router = APIRouter(prefix="/challenges", tags=["submissions"])
