@@ -29,6 +29,14 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Callable
 import hashlib
 
+# CRITICAL: Use 'spawn' instead of 'fork' to avoid deadlocks with threaded servers
+# The default 'fork' method copies memory but not threads, leaving locks in acquired state
+# See: https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
+try:
+    multiprocessing.set_start_method('spawn', force=True)
+except RuntimeError:
+    pass  # Already set, ignore
+
 from ..config import SANDBOX_TIMEOUT_SECONDS, SANDBOX_MEMORY_MB, SANDBOX_MAX_OUTPUT_BYTES
 from .validator import CodeValidator, ValidationError
 
@@ -349,10 +357,12 @@ class SandboxExecutor:
                     memory_used_bytes=None,
                 )
         
-        # Step 2: Run in isolated subprocess
-        result_queue = multiprocessing.Queue()
+        # Step 2: Run in isolated subprocess using spawn context
+        # Spawn is safer than fork in threaded environments (FastAPI/uvicorn)
+        ctx = multiprocessing.get_context('spawn')
+        result_queue = ctx.Queue()
         
-        process = multiprocessing.Process(
+        process = ctx.Process(
             target=_run_in_sandbox,
             args=(
                 code,
